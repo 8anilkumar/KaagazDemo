@@ -11,24 +11,26 @@
         android:layout_height="match_parent"
         android:id="@+id/preview"/>
 
-    <HorizontalScrollView
-        android:id="@+id/horiScroll"
-        android:layout_width="match_parent"
+    <Button
+        android:id="@+id/btn_save"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:text="Save"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:ignore="MissingConstraints" />
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/d_100dp"
+        tools:listitem="@layout/image_row"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/img_capture_btn">
 
-        <LinearLayout
-            android:id="@+id/imageLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:visibility="visible">
-
-        </LinearLayout>
-
-    </HorizontalScrollView>
+    </androidx.recyclerview.widget.RecyclerView>
 
     <Button
         android:id="@+id/img_capture_btn"
