@@ -88,7 +88,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setUpDB() {
-        databaseHandler = Room.databaseBuilder(this@MainActivity, DatabaseHandler::class.java, "IMAGE_TABLE")
+        databaseHandler =
+            Room.databaseBuilder(this@MainActivity, DatabaseHandler::class.java, "IMAGE_TABLE")
                 .allowMainThreadQueries().build()
     }
 
@@ -121,21 +122,21 @@ class MainActivity : AppCompatActivity() {
             albumbNameBinding = AlbumbNameBinding.inflate(layoutInflater)
 
             albumbNameBinding.btnSubmit.setOnClickListener {
-
-                val albumbName:String = albumbNameBinding.edAlbumbName.text.trim().toString()
-
-                albumbName.let {
+                val albumbName: String = albumbNameBinding.edAlbumbName.text.trim().toString()
+                if (albumbName.isNotBlank() && albumbName.isNotEmpty()) {
                     val imageEntityList: MutableList<ImageEntity> = mutableListOf()
                     imageUriList.forEach {
                         val imageEntity = ImageEntity(it.toString(), Date().toString())
                         imageEntityList.add(imageEntity)
                     }
-                    val albumEntity = AlbumEntity(ImageListEntity(imageEntityList),it)
+                    val albumEntity = AlbumEntity(ImageListEntity(imageEntityList), albumbName)
                     databaseHandler.imageInterface()?.addImageInAlbumb(albumEntity)
 
                     imageUriList.clear()
                     adapter.notifyDataSetChanged()
                     alertDialog.dismiss()
+                } else{
+                    Toast.makeText(binding.root.context,"Please Enter Albumb name!",Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -199,7 +200,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun initRecyclerView() {
         adapter = ImageAdapter()
-        binding.recyclerview.layoutManager = LinearLayoutManager(binding.root.context,RecyclerView.HORIZONTAL,false)
+        binding.recyclerview.layoutManager =
+            LinearLayoutManager(binding.root.context, RecyclerView.HORIZONTAL, false)
         binding.recyclerview.adapter = adapter
     }
 
