@@ -5,15 +5,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.anil.kaagazdemo.R
-import com.anil.kaagazdemo.interfaces.DeleteImageListner
-import com.anil.kaagazdemo.utils.ImageDataUtil
 import com.bumptech.glide.Glide
 
 internal class ImageAdapter(private var imageUriList:MutableList<Uri> = mutableListOf()) : RecyclerView.Adapter<ImageAdapter.MyViewHolder>() {
-
 
     internal inner class MyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         var imageView: ImageView = view.findViewById(R.id.imageView)

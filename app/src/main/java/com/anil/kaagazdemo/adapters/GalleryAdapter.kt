@@ -1,34 +1,32 @@
 package com.anil.kaagazdemo.adapters
 
-import android.net.Uri
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import androidx.core.net.toUri
+import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
-import com.anil.kaagazdemo.ImageEntity
-import com.anil.kaagazdemo.R
+import com.anil.kaagazdemo.database.AlbumEntity
+import com.anil.kaagazdemo.database.ImageEntity
 import com.anil.kaagazdemo.databinding.AlbumbRowBinding
-import com.anil.kaagazdemo.databinding.ListItemImgBinding
+import com.anil.kaagazdemo.interfaces.AlbumbListner
 import com.bumptech.glide.Glide
-import java.io.File
 
-class GalleryAdapter(private var imageList:MutableList<ImageEntity> = mutableListOf()) : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
+class GalleryAdapter(private var albumList: MutableList<AlbumEntity> = mutableListOf(),
+    private var albumblistner: AlbumbListner) : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
 
     class ViewHolder(private val binding: AlbumbRowBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(image: String) {
-            Glide.with(binding.root).load(image.toUri()).into(binding.imageView)
+        var albumbLayout: LinearLayout =  binding.albumbLayout
+        fun bind(imageData: ImageEntity) {
+            val uriString = "file://${imageData.imgPath}"
+            Glide.with(binding.root).load(uriString).into(binding.imageView)
         }
 
-        fun bindName(name: String) {
-            binding.txtFileName.text = name
+        fun bindName(albumbName: String) {
+            binding.txtFileName.text = albumbName
         }
-
     }
 
-    fun updateList(newImageUtilList: List<ImageEntity>) {
-        imageList = newImageUtilList as MutableList<ImageEntity>
+    fun updateList(newImageUtilList: List<AlbumEntity>) {
+        albumList = newImageUtilList as MutableList<AlbumEntity>
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -37,13 +35,26 @@ class GalleryAdapter(private var imageList:MutableList<ImageEntity> = mutableLis
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        imageList[position].imgPath?.let { holder.bind(it) }
-        imageList[position].timeStamp?.let { holder.bindName(it) }
+
+        albumList[position].let {
+            if(it.imageListEntity.imageList.isNotEmpty()){
+                holder.bind(it.imageListEntity.imageList.first())
+            }
+        }
+
+        albumList[position].albumbName.let {
+            holder.bindName(it)
+        }
+
+        holder.albumbLayout.setOnClickListener {
+            albumblistner.albulbListner(albumList[position].imageListEntity.imageList)
+
+        }
 
     }
 
     override fun getItemCount(): Int {
-        return imageList.size
+        return albumList.size
     }
 }
 

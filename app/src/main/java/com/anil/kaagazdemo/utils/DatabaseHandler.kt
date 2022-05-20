@@ -2,10 +2,12 @@ package com.anil.kaagazdemo.utils
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.anil.kaagazdemo.ImageEntity
+import androidx.room.TypeConverters
+import com.anil.kaagazdemo.database.AlbumEntity
+import com.anil.kaagazdemo.TypeConverter
 
-@Database(entities = [ImageEntity::class], exportSchema = false, version = 1)
-
+@Database(entities = [AlbumEntity::class], exportSchema = false, version = 1)
+@TypeConverters(TypeConverter::class)
 abstract class DatabaseHandler : RoomDatabase() {
     abstract fun imageInterface(): ImageDao?
 
@@ -14,4 +16,5 @@ abstract class DatabaseHandler : RoomDatabase() {
         private const val DBPDFNAME = "mypdf"
         private val instanse: DatabaseHandler? = null
     }
+
 }

@@ -1,16 +1,15 @@
 package com.anil.kaagazdemo
 
+import android.app.AlertDialog
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
-import android.util.Base64
 import android.util.Log
-import android.widget.*
+import android.view.View
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -25,28 +24,39 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import com.anil.kaagazdemo.adapters.ImageAdapter
+import com.anil.kaagazdemo.adapters.SliderAdapter
+import com.anil.kaagazdemo.database.AlbumEntity
+import com.anil.kaagazdemo.database.ImageEntity
+import com.anil.kaagazdemo.database.ImageListEntity
 import com.anil.kaagazdemo.databinding.ActivityMainBinding
-import com.anil.kaagazdemo.interfaces.DeleteImageListner
+import com.anil.kaagazdemo.databinding.AlbumbNameBinding
+import com.anil.kaagazdemo.databinding.PhotosBgBinding
+import com.anil.kaagazdemo.interfaces.AlbumbListner
 import com.anil.kaagazdemo.utils.DatabaseHandler
 import com.anil.kaagazdemo.view.GalleryActivity
 import com.google.android.material.snackbar.Snackbar
 import com.google.common.util.concurrent.ListenableFuture
-import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 
-class MainActivity : AppCompatActivity(), DeleteImageListner {
+class MainActivity : AppCompatActivity() {
+
+    companion object {
+        val TAG = "MainActivity"
+    }
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var albumbNameBinding: AlbumbNameBinding
     private lateinit var adapter: ImageAdapter
     private lateinit var databaseHandler: DatabaseHandler
     private lateinit var cameraProviderFuture: ListenableFuture<ProcessCameraProvider>
     private lateinit var cameraSelector: CameraSelector
     private var imageCapture: ImageCapture? = null
     private lateinit var imgCaptureExecutor: ExecutorService
-    var imageUriList: MutableList<Uri> = mutableListOf()
+    private var imageUriList: MutableList<Uri> = mutableListOf()
 
     private val cameraPermissionResult =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { permissionGranted ->
@@ -60,11 +70,6 @@ class MainActivity : AppCompatActivity(), DeleteImageListner {
                 ).show()
             }
         }
-
-    companion object {
-        val TAG = "MainActivity"
-    }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,7 +92,7 @@ class MainActivity : AppCompatActivity(), DeleteImageListner {
                 .allowMainThreadQueries().build()
     }
 
-    fun initListener() {
+    private fun initListener() {
         binding.imgCaptureBtn.setOnClickListener {
             takePhoto()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -111,15 +116,31 @@ class MainActivity : AppCompatActivity(), DeleteImageListner {
 
         binding.btnSave.setOnClickListener {
 
-            var imageEntityList: Array<ImageEntity> = arrayOf<ImageEntity>()
-            for(i in 1 until imageUriList.size) {
-                 imageEntityList = arrayOf<ImageEntity>(
-                    ImageEntity(0,imageUriList[i].path,"Albumb")
-                )
+            val alertDialog = AlertDialog.Builder(binding.root.context).create()
+            alertDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            albumbNameBinding = AlbumbNameBinding.inflate(layoutInflater)
+
+            albumbNameBinding.btnSubmit.setOnClickListener {
+
+                val albumbName:String = albumbNameBinding.edAlbumbName.text.trim().toString()
+
+                albumbName.let {
+                    val imageEntityList: MutableList<ImageEntity> = mutableListOf()
+                    imageUriList.forEach {
+                        val imageEntity = ImageEntity(it.toString(), Date().toString())
+                        imageEntityList.add(imageEntity)
+                    }
+                    val albumEntity = AlbumEntity(ImageListEntity(imageEntityList),it)
+                    databaseHandler.imageInterface()?.addImageInAlbumb(albumEntity)
+
+                    imageUriList.clear()
+                    adapter.notifyDataSetChanged()
+                    alertDialog.dismiss()
+                }
             }
 
-            databaseHandler.imageInterface()?.addImageInAlbumb(imageEntityList)
-
+            alertDialog.setView(albumbNameBinding.root)
+            alertDialog.show()
         }
     }
 
@@ -131,7 +152,6 @@ class MainActivity : AppCompatActivity(), DeleteImageListner {
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
             imageCapture = ImageCapture.Builder().build()
-
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
@@ -191,10 +211,4 @@ class MainActivity : AppCompatActivity(), DeleteImageListner {
         }
     }
 
-    override fun imageListner(mutableList: MutableList<Uri>) {
-        adapter.updateList(mutableList)
-        runOnUiThread {
-            adapter.notifyDataSetChanged()
-        }
-    }
 }
