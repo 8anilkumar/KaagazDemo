@@ -7,11 +7,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.anil.kaagazdemo.database.AlbumEntity
 import com.anil.kaagazdemo.database.ImageEntity
 import com.anil.kaagazdemo.databinding.AlbumbRowBinding
-import com.anil.kaagazdemo.interfaces.AlbumbListner
+import com.anil.kaagazdemo.interfaces.AlbumListner
 import com.bumptech.glide.Glide
 
 class GalleryAdapter(private var albumList: MutableList<AlbumEntity> = mutableListOf(),
-    private var albumblistner: AlbumbListner) : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
+    private var albumblistner: AlbumListner) : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
 
     class ViewHolder(private val binding: AlbumbRowBinding) : RecyclerView.ViewHolder(binding.root) {
         var albumbLayout: LinearLayout =  binding.albumbLayout
@@ -19,7 +19,6 @@ class GalleryAdapter(private var albumList: MutableList<AlbumEntity> = mutableLi
             val uriString = "file://${imageData.imgPath}"
             Glide.with(binding.root).load(uriString).into(binding.imageView)
         }
-
         fun bindName(albumbName: String) {
             binding.txtFileName.text = albumbName
         }
@@ -42,15 +41,13 @@ class GalleryAdapter(private var albumList: MutableList<AlbumEntity> = mutableLi
             }
         }
 
-        albumList[position].albumbName.let {
+        albumList[position].albumName.let {
             holder.bindName(it)
         }
 
         holder.albumbLayout.setOnClickListener {
-            albumblistner.albulbListner(albumList[position].imageListEntity.imageList)
-
+            albumblistner.albumListener(albumList[position].imageListEntity.imageList)
         }
-
     }
 
     override fun getItemCount(): Int {

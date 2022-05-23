@@ -9,8 +9,8 @@ import com.anil.kaagazdemo.database.AlbumEntity
 interface ImageDao {
 
     @Query("SELECT * FROM IMAGE_TABLE")
-    fun getAlbumb(): List<AlbumEntity>
+    fun getAlbum(): List<AlbumEntity>
 
     @Insert
-    fun addImageInAlbumb(addAlbum: AlbumEntity)
+    fun addImageInAlbum(addAlbum: AlbumEntity)
 }

@@ -1,7 +1,6 @@
 package com.anil.kaagazdemo
 
 import android.app.AlertDialog
-import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
@@ -24,16 +23,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import com.anil.kaagazdemo.adapters.ImageAdapter
-import com.anil.kaagazdemo.adapters.SliderAdapter
 import com.anil.kaagazdemo.database.AlbumEntity
 import com.anil.kaagazdemo.database.ImageEntity
 import com.anil.kaagazdemo.database.ImageListEntity
 import com.anil.kaagazdemo.databinding.ActivityMainBinding
 import com.anil.kaagazdemo.databinding.AlbumbNameBinding
-import com.anil.kaagazdemo.databinding.PhotosBgBinding
-import com.anil.kaagazdemo.interfaces.AlbumbListner
+import com.anil.kaagazdemo.interfaces.PhotoUpdateInterface
 import com.anil.kaagazdemo.utils.DatabaseHandler
-import com.anil.kaagazdemo.view.GalleryActivity
 import com.google.android.material.snackbar.Snackbar
 import com.google.common.util.concurrent.ListenableFuture
 import java.io.File
@@ -42,7 +38,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 
-class MainActivity : AppCompatActivity() {
+class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
 
     companion object {
         val TAG = "MainActivity"
@@ -57,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private var imageCapture: ImageCapture? = null
     private lateinit var imgCaptureExecutor: ExecutorService
     private var imageUriList: MutableList<Uri> = mutableListOf()
+    private lateinit var photoUpdateInterface: PhotoUpdateInterface
 
     private val cameraPermissionResult =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { permissionGranted ->
@@ -75,7 +72,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        //photoUpdateInterface = PhotoUpdateInterface
         cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
         imgCaptureExecutor = Executors.newSingleThreadExecutor()
@@ -89,7 +86,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setUpDB() {
         databaseHandler =
-            Room.databaseBuilder(this@MainActivity, DatabaseHandler::class.java, "IMAGE_TABLE")
+            Room.databaseBuilder(this@CameraActivity, DatabaseHandler::class.java, "IMAGE_TABLE")
                 .allowMainThreadQueries().build()
     }
 
@@ -110,12 +107,12 @@ class MainActivity : AppCompatActivity() {
             startCamera()
         }
 
-        binding.galleryBtn.setOnClickListener {
-            val intent = Intent(this, GalleryActivity::class.java)
-            startActivity(intent)
-        }
+//        binding.galleryBtn.setOnClickListener {
+//            val intent = Intent(this, GalleryActivity::class.java)
+//            startActivity(intent)
+//        }
 
-        binding.btnSave.setOnClickListener {
+        binding.saveBtn.setOnClickListener {
 
             val alertDialog = AlertDialog.Builder(binding.root.context).create()
             alertDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
@@ -130,13 +127,15 @@ class MainActivity : AppCompatActivity() {
                         imageEntityList.add(imageEntity)
                     }
                     val albumEntity = AlbumEntity(ImageListEntity(imageEntityList), albumbName)
-                    databaseHandler.imageInterface()?.addImageInAlbumb(albumEntity)
+                    databaseHandler.imageInterface()?.addImageInAlbum(albumEntity)
 
                     imageUriList.clear()
                     adapter.notifyDataSetChanged()
+                    Toast.makeText(this@CameraActivity,"Album successfully Saved",Toast.LENGTH_SHORT)
                     alertDialog.dismiss()
+                    this.finish()
                 } else{
-                    Toast.makeText(binding.root.context,"Please Enter Albumb name!",Toast.LENGTH_SHORT).show()
+                    Toast.makeText(binding.root.context,"Please Enter Album name!",Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -199,7 +198,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initRecyclerView() {
-        adapter = ImageAdapter()
+        adapter = ImageAdapter(listener = this@CameraActivity)
         binding.recyclerview.layoutManager =
             LinearLayoutManager(binding.root.context, RecyclerView.HORIZONTAL, false)
         binding.recyclerview.adapter = adapter
@@ -208,8 +207,22 @@ class MainActivity : AppCompatActivity() {
     fun updateRecyclerView(imageUri: Uri) {
         imageUriList.add(imageUri)
         adapter.updateList(imageUriList)
+
         runOnUiThread {
+            if(imageUriList.isNotEmpty()){
+                binding.saveBtn.visibility = View.VISIBLE
+            }else{
+                binding.saveBtn.visibility = View.GONE
+            }
             adapter.notifyDataSetChanged()
+        }
+    }
+
+    override fun shouldDisplaySaveButton(isShow: Boolean) {
+        if(isShow){
+            binding.saveBtn.visibility = View.VISIBLE
+        }else{
+            binding.saveBtn.visibility = View.GONE
         }
     }
 

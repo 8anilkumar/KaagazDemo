@@ -23,10 +23,7 @@ class SliderAdapter(private val fileArray: List<ImageEntity>) : RecyclerView.Ada
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-
         fileArray[position].imgPath?.let { holder.bind(it) }
-
-
     }
 
     override fun getItemCount(): Int {
