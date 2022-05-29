@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Kaagaz Demo</string>
+    <string name="cam_permission_text">The camera permission is necessary"</string>
 </resources>

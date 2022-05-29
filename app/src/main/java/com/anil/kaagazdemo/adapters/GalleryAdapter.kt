@@ -4,23 +4,24 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
-import com.anil.kaagazdemo.database.AlbumEntity
-import com.anil.kaagazdemo.database.ImageEntity
+import com.anil.kaagazdemo.model.AlbumEntity
+import com.anil.kaagazdemo.model.ImageEntity
 import com.anil.kaagazdemo.databinding.AlbumbRowBinding
 import com.anil.kaagazdemo.interfaces.AlbumListner
 import com.bumptech.glide.Glide
 
-class GalleryAdapter(private var albumList: MutableList<AlbumEntity> = mutableListOf(),
-    private var albumblistner: AlbumListner) : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
+class GalleryAdapter(
+    private var albumList: MutableList<AlbumEntity> = mutableListOf(),
+    private var albumblistner: AlbumListner
+) : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
 
-    class ViewHolder(private val binding: AlbumbRowBinding) : RecyclerView.ViewHolder(binding.root) {
-        var albumbLayout: LinearLayout =  binding.albumbLayout
-        fun bind(imageData: ImageEntity) {
-            val uriString = "file://${imageData.imgPath}"
+    class ViewHolder(private val binding: AlbumbRowBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        var albumLayout: LinearLayout = binding.albumbLayout
+        fun bind(imageData: ImageEntity, albumName: String) {
+            val uriString = "${imageData.imgPath}"
             Glide.with(binding.root).load(uriString).into(binding.imageView)
-        }
-        fun bindName(albumbName: String) {
-            binding.txtFileName.text = albumbName
+            binding.txtFileName.text = albumName
         }
     }
 
@@ -34,19 +35,12 @@ class GalleryAdapter(private var albumList: MutableList<AlbumEntity> = mutableLi
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-
-        albumList[position].let {
-            if(it.imageListEntity.imageList.isNotEmpty()){
-                holder.bind(it.imageListEntity.imageList.first())
-            }
+        val album = albumList[position]
+        if (album.imageListEntity.isNotEmpty()) {
+            holder.bind(album.imageListEntity.first(), album.albumName)
         }
-
-        albumList[position].albumName.let {
-            holder.bindName(it)
-        }
-
-        holder.albumbLayout.setOnClickListener {
-            albumblistner.albumListener(albumList[position].imageListEntity.imageList)
+        holder.albumLayout.setOnClickListener {
+            albumblistner.albumListener(albumList[position].imageListEntity)
         }
     }
 

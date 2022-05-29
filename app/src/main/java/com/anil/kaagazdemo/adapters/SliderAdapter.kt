@@ -3,7 +3,7 @@ package com.anil.kaagazdemo.adapters
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.anil.kaagazdemo.database.ImageEntity
+import com.anil.kaagazdemo.model.ImageEntity
 import com.anil.kaagazdemo.databinding.ListItemImgBinding
 import com.bumptech.glide.Glide
 

@@ -6,9 +6,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.anil.kaagazdemo.databinding.ImageRowBinding
 import com.anil.kaagazdemo.interfaces.PhotoUpdateInterface
+import com.anil.kaagazdemo.model.ImageEntity
 import com.bumptech.glide.Glide
 
-internal class ImageAdapter( private var imageUriList: MutableList<Uri> = mutableListOf(),
+internal class ImageAdapter( private var imageUriList: MutableList<ImageEntity> = mutableListOf(),
     val listener: PhotoUpdateInterface) : RecyclerView.Adapter<ImageAdapter.MyViewHolder>() {
 
     lateinit var binding: ImageRowBinding
@@ -19,18 +20,14 @@ internal class ImageAdapter( private var imageUriList: MutableList<Uri> = mutabl
             Glide.with(binding.imageView.context).load(uri).into(binding.imageView)
             binding.imgCancel.setOnClickListener {
                 imageUriList.removeAt(position)
-                if (imageUriList.size > 0) {
-                    listener.shouldDisplaySaveButton(true)
-                } else {
-                    listener.shouldDisplaySaveButton(false)
-                }
+                listener.shouldDisplaySaveButton(imageUriList.size > 0)
                 notifyDataSetChanged()
             }
         }
     }
 
-    fun updateList(newImageUtilList: List<Uri>) {
-        imageUriList = newImageUtilList as MutableList<Uri>
+    fun updateList(newImageUtilList: List<ImageEntity>) {
+        imageUriList = newImageUtilList as MutableList<ImageEntity>
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -40,11 +37,11 @@ internal class ImageAdapter( private var imageUriList: MutableList<Uri> = mutabl
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         val imageUri = imageUriList[position]
-        holder.binding(imageUri, position)
+        holder.binding(Uri.parse(imageUri.imgPath), position)
     }
 
     override fun getItemCount(): Int {
-        return imageUriList.size ?:0
+        return imageUriList.size
     }
 }
 

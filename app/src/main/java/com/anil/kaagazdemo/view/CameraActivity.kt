@@ -1,4 +1,4 @@
-package com.anil.kaagazdemo
+package com.anil.kaagazdemo.view
 
 import android.app.AlertDialog
 import android.graphics.Color
@@ -19,41 +19,42 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.room.Room
+import com.anil.kaagazdemo.R
 import com.anil.kaagazdemo.adapters.ImageAdapter
-import com.anil.kaagazdemo.database.AlbumEntity
-import com.anil.kaagazdemo.database.ImageEntity
-import com.anil.kaagazdemo.database.ImageListEntity
+import com.anil.kaagazdemo.model.AlbumEntity
+import com.anil.kaagazdemo.model.ImageEntity
 import com.anil.kaagazdemo.databinding.ActivityMainBinding
 import com.anil.kaagazdemo.databinding.AlbumbNameBinding
 import com.anil.kaagazdemo.interfaces.PhotoUpdateInterface
-import com.anil.kaagazdemo.utils.DatabaseHandler
+import com.anil.kaagazdemo.viewmodel.CameraViewModel
 import com.google.android.material.snackbar.Snackbar
 import com.google.common.util.concurrent.ListenableFuture
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-
+@AndroidEntryPoint
 class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
 
     companion object {
-        val TAG = "MainActivity"
+        const val tag = "MainActivity"
     }
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var albumbNameBinding: AlbumbNameBinding
+    private lateinit var albumNameBinding: AlbumbNameBinding
     private lateinit var adapter: ImageAdapter
-    private lateinit var databaseHandler: DatabaseHandler
     private lateinit var cameraProviderFuture: ListenableFuture<ProcessCameraProvider>
     private lateinit var cameraSelector: CameraSelector
     private var imageCapture: ImageCapture? = null
     private lateinit var imgCaptureExecutor: ExecutorService
-    private var imageUriList: MutableList<Uri> = mutableListOf()
-    private lateinit var photoUpdateInterface: PhotoUpdateInterface
+    private var imageUriList: MutableList<ImageEntity> = mutableListOf()
+    private lateinit var cameraViewModel: CameraViewModel
+
 
     private val cameraPermissionResult =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { permissionGranted ->
@@ -62,7 +63,7 @@ class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
             } else {
                 Snackbar.make(
                     binding.root,
-                    "The camera permission is necessary",
+                    getString(R.string.cam_permission_text),
                     Snackbar.LENGTH_INDEFINITE
                 ).show()
             }
@@ -72,22 +73,23 @@ class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        //photoUpdateInterface = PhotoUpdateInterface
+        setViewModel()
+        initCamera()
+        initRecyclerView()
+        initListener()
+    }
+
+    /** Init methods */
+
+    private fun initCamera() {
         cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
         imgCaptureExecutor = Executors.newSingleThreadExecutor()
         cameraPermissionResult.launch(android.Manifest.permission.CAMERA)
-
-        initRecyclerView()
-        initListener()
-        setUpDB()
-
     }
 
-    private fun setUpDB() {
-        databaseHandler =
-            Room.databaseBuilder(this@CameraActivity, DatabaseHandler::class.java, "IMAGE_TABLE")
-                .allowMainThreadQueries().build()
+    private fun setViewModel(){
+        cameraViewModel = ViewModelProvider(this@CameraActivity)[CameraViewModel::class.java]
     }
 
     private fun initListener() {
@@ -106,44 +108,36 @@ class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
             }
             startCamera()
         }
-
-//        binding.galleryBtn.setOnClickListener {
-//            val intent = Intent(this, GalleryActivity::class.java)
-//            startActivity(intent)
-//        }
-
         binding.saveBtn.setOnClickListener {
-
-            val alertDialog = AlertDialog.Builder(binding.root.context).create()
-            alertDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            albumbNameBinding = AlbumbNameBinding.inflate(layoutInflater)
-
-            albumbNameBinding.btnSubmit.setOnClickListener {
-                val albumbName: String = albumbNameBinding.edAlbumbName.text.trim().toString()
-                if (albumbName.isNotBlank() && albumbName.isNotEmpty()) {
-                    val imageEntityList: MutableList<ImageEntity> = mutableListOf()
-                    imageUriList.forEach {
-                        val imageEntity = ImageEntity(it.toString(), Date().toString())
-                        imageEntityList.add(imageEntity)
-                    }
-                    val albumEntity = AlbumEntity(ImageListEntity(imageEntityList), albumbName)
-                    databaseHandler.imageInterface()?.addImageInAlbum(albumEntity)
-
-                    imageUriList.clear()
-                    adapter.notifyDataSetChanged()
-                    Toast.makeText(this@CameraActivity,"Album successfully Saved",Toast.LENGTH_SHORT)
-                    alertDialog.dismiss()
-                    this.finish()
-                } else{
-                    Toast.makeText(binding.root.context,"Please Enter Album name!",Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            alertDialog.setView(albumbNameBinding.root)
-            alertDialog.show()
+        showAlbumNameDialog()
         }
     }
 
+    /** Dialog to ask user album's name */
+    private fun showAlbumNameDialog(){
+        val alertDialog = AlertDialog.Builder(binding.root.context).create()
+        alertDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        albumNameBinding = AlbumbNameBinding.inflate(layoutInflater)
+        albumNameBinding.btnSubmit.setOnClickListener {
+            val albumName = albumNameBinding.edAlbumbName.text.trim().toString()
+            if (albumName.isNotEmpty()) {
+                val albumEntity = AlbumEntity(imageUriList, albumName)
+                cameraViewModel.insertAlbum(albumEntity)
+                adapter.notifyDataSetChanged()
+                toast("Album successfully Saved")
+                alertDialog?.dismiss()
+                finish()
+            } else {
+               toast("Please Enter Album name!")
+            }
+        }
+        alertDialog?.apply {
+            setView(albumNameBinding.root)
+            show()
+        }
+    }
+
+    /** Methods to operate camera */
     private fun startCamera() {
         val preview = Preview.Builder().build().also {
             it.setSurfaceProvider(binding.preview.surfaceProvider)
@@ -156,7 +150,7 @@ class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
             } catch (e: Exception) {
-                Log.d(TAG, "Use case binding failed")
+                Log.d(tag, "Use case binding failed")
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -171,7 +165,8 @@ class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
                 imgCaptureExecutor,
                 object : ImageCapture.OnImageSavedCallback {
                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                        Log.i(TAG, "The image has been saved in ${file.toUri()}")
+                        Log.i(tag, "The image has been saved in ${file.toUri()}")
+
                         outputFileResults.savedUri?.let { uri -> updateRecyclerView(uri) }
                     }
 
@@ -181,7 +176,7 @@ class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
                             "Error taking photo",
                             Toast.LENGTH_LONG
                         ).show()
-                        Log.d(TAG, "Error taking photo:$exception")
+                        Log.d(tag, "Error taking photo:$exception")
                     }
                 })
         }
@@ -197,6 +192,7 @@ class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
         }, 100)
     }
 
+    /** methods to handle clicked image's recyclerview */
     private fun initRecyclerView() {
         adapter = ImageAdapter(listener = this@CameraActivity)
         binding.recyclerview.layoutManager =
@@ -205,13 +201,14 @@ class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
     }
 
     fun updateRecyclerView(imageUri: Uri) {
-        imageUriList.add(imageUri)
+        val imageEntity = ImageEntity(imageUri.toString(),Date().toString())
+        imageUriList.add(imageEntity)
         adapter.updateList(imageUriList)
 
         runOnUiThread {
-            if(imageUriList.isNotEmpty()){
+            if (imageUriList.isNotEmpty()) {
                 binding.saveBtn.visibility = View.VISIBLE
-            }else{
+            } else {
                 binding.saveBtn.visibility = View.GONE
             }
             adapter.notifyDataSetChanged()
@@ -219,11 +216,18 @@ class CameraActivity : AppCompatActivity(), PhotoUpdateInterface {
     }
 
     override fun shouldDisplaySaveButton(isShow: Boolean) {
-        if(isShow){
+        if (isShow) {
             binding.saveBtn.visibility = View.VISIBLE
-        }else{
+        } else {
             binding.saveBtn.visibility = View.GONE
         }
     }
 
+  private  fun toast(msg: String){
+      Toast.makeText(
+          this@CameraActivity,
+          msg,
+          Toast.LENGTH_SHORT
+      )
+    }
 }
